@@ -4,6 +4,23 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
 
+function session(id: number, scriptName: string, status: string) {
+  return {
+    id,
+    script_name: scriptName,
+    stopped_at: "2026-05-04T12:00:00Z",
+    started_at: "2026-05-04T11:58:00Z",
+    run_time_seconds: 120,
+    experience_gained: 1500,
+    status,
+    runtime_info: {
+      xp_gained_hr: 45000,
+      level: 82,
+      levels_gained: 1
+    }
+  };
+}
+
 const scripts = [
   {
     script_name: "Agility",
@@ -14,24 +31,7 @@ const scripts = [
     recent_success_count: 1,
     recent_failure_count: 1,
     recent_unknown_count: 0,
-    recent_sessions: [
-      {
-        id: 1,
-        script_name: "Agility",
-        stopped_at: "2026-05-04T12:00:00Z",
-        started_at: "2026-05-04T11:58:00Z",
-        run_time_seconds: 120,
-        experience_gained: 1500,
-        status: "MISSING_REQUIREMENTS",
-        runtime_info: {
-          status: "failed",
-          reason: "bank pin",
-          xp_gained_hr: 45000,
-          level: 82,
-          levels_gained: 1
-        }
-      }
-    ]
+    recent_sessions: [session(1, "Agility", "MISSING_REQUIREMENTS")]
   },
   {
     script_name: "Fishing",
@@ -43,6 +43,37 @@ const scripts = [
     recent_failure_count: 0,
     recent_unknown_count: 0,
     recent_sessions: []
+  },
+  {
+    script_name: "Cooking",
+    run_count: 3,
+    average_runtime_seconds: 300,
+    latest_stopped_at: "2026-05-02T12:00:00Z",
+    total_experience_gained: 3000,
+    recent_success_count: 3,
+    recent_failure_count: 0,
+    recent_unknown_count: 0,
+    recent_sessions: [
+      session(2, "Cooking", "SUCCESS"),
+      session(3, "Cooking", "SUCCESS"),
+      session(4, "Cooking", "SUCCESS")
+    ]
+  },
+  {
+    script_name: "Mining",
+    run_count: 10,
+    average_runtime_seconds: 300,
+    latest_stopped_at: "2026-05-01T12:00:00Z",
+    total_experience_gained: 3000,
+    recent_success_count: 9,
+    recent_failure_count: 1,
+    recent_unknown_count: 0,
+    recent_sessions: [
+      session(5, "Mining", "STUCK"),
+      ...Array.from({ length: 9 }, (_, index) =>
+        session(6 + index, "Mining", "SUCCESS"),
+      )
+    ]
   }
 ];
 
@@ -65,6 +96,12 @@ describe("App", () => {
         }
         if (url.includes("/api/scripts/Fishing/health")) {
           return Promise.resolve(new Response(JSON.stringify(scripts[1]), { status: 200 }));
+        }
+        if (url.includes("/api/scripts/Cooking/health")) {
+          return Promise.resolve(new Response(JSON.stringify(scripts[2]), { status: 200 }));
+        }
+        if (url.includes("/api/scripts/Mining/health")) {
+          return Promise.resolve(new Response(JSON.stringify(scripts[3]), { status: 200 }));
         }
         return Promise.resolve(new Response(JSON.stringify(scripts), { status: 200 }));
       })
@@ -90,6 +127,33 @@ describe("App", () => {
     expect(within(summaries).getByText("Agility")).toBeInTheDocument();
     expect(within(summaries).getByText("Fishing")).toBeInTheDocument();
     expect(screen.queryByLabelText("Filter scripts")).not.toBeInTheDocument();
+  });
+
+  it("labels script card health from recent session percentages", async () => {
+    renderApp();
+
+    const summaries = screen.getByLabelText("Script summaries");
+
+    expect(
+      await within(summaries).findByRole("button", {
+        name: "Agility health warn",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(summaries).getByRole("button", {
+        name: "Fishing health neutral",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(summaries).getByRole("button", {
+        name: "Cooking health good",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      within(summaries).getByRole("button", {
+        name: "Mining health bad",
+      }),
+    ).toBeInTheDocument();
   });
 
   it("shows a single load error when sessions cannot be loaded", async () => {

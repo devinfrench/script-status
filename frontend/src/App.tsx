@@ -134,13 +134,15 @@ function ScriptSummaryCard({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const failures = script.recent_failure_count;
+  const healthTone = getScriptHealthTone(script.recent_sessions);
+  const style = getScriptSummaryStyle(healthTone);
   return (
     <button
       type="button"
+      aria-label={`${script.script_name} health ${healthTone}`}
       onClick={onSelect}
-      className={`rounded-md border bg-surface p-4 text-left shadow-sm transition hover:border-good hover:bg-muted hover:shadow ${
-        selected ? "border-good bg-muted ring-2 ring-good/25" : "border-line"
+      className={`rounded-md border bg-surface p-4 text-left shadow-sm transition hover:bg-muted hover:shadow ${
+        selected ? style.selected : style.idle
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -152,11 +154,7 @@ function ScriptSummaryCard({
             Latest {formatDateTime(script.latest_stopped_at)}
           </div>
         </div>
-        {failures > 0 ? (
-          <XCircle className="h-5 w-5 shrink-0 text-bad" />
-        ) : (
-          <CheckCircle2 className="h-5 w-5 shrink-0 text-good" />
-        )}
+        {getScriptHealthIcon(healthTone)}
       </div>
       <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
         <SummaryCell label="Runs" value={formatNumber(script.run_count)} />
@@ -167,6 +165,81 @@ function ScriptSummaryCard({
       </div>
     </button>
   );
+}
+
+type ScriptHealthTone = "good" | "warn" | "bad" | "neutral";
+
+function getScriptHealthTone(sessions: SessionRecord[]): ScriptHealthTone {
+  const total = sessions.length;
+  if (total === 0) {
+    return "neutral";
+  }
+
+  const hardFailures = sessions.filter((session) =>
+    isHardFailureStatus(session.status),
+  ).length;
+  const stuck = sessions.filter(
+    (session) => session.status.toUpperCase() === "STUCK",
+  ).length;
+  const attention = sessions.filter((session) =>
+    isAttentionStatus(session.status),
+  ).length;
+
+  const hardFailureRate = hardFailures / total;
+  const stuckRate = stuck / total;
+  const attentionRate = attention / total;
+
+  if (stuckRate >= 0.1 || hardFailureRate >= 0.3) {
+    return "bad";
+  }
+  if (hardFailureRate > 0 || attentionRate >= 0.2) {
+    return "warn";
+  }
+  return "good";
+}
+
+function isHardFailureStatus(status: string): boolean {
+  const normalized = status.toUpperCase();
+  return normalized === "ERROR" || normalized === "STUCK";
+}
+
+function isAttentionStatus(status: string): boolean {
+  const normalized = status.toUpperCase();
+  return normalized === "UNKNOWN" || normalized === "MISSING_REQUIREMENTS";
+}
+
+function getScriptSummaryStyle(tone: ScriptHealthTone) {
+  return {
+    good: {
+      idle: "border-good hover:border-good",
+      selected: "border-good bg-muted ring-2 ring-good/25",
+    },
+    warn: {
+      idle: "border-warn hover:border-warn",
+      selected: "border-warn bg-muted ring-2 ring-warn/25",
+    },
+    bad: {
+      idle: "border-bad hover:border-bad",
+      selected: "border-bad bg-muted ring-2 ring-bad/25",
+    },
+    neutral: {
+      idle: "border-line hover:border-brand",
+      selected: "border-brand bg-muted ring-2 ring-brand/25",
+    },
+  }[tone];
+}
+
+function getScriptHealthIcon(tone: ScriptHealthTone): React.ReactNode {
+  if (tone === "good") {
+    return <CheckCircle2 className="h-5 w-5 shrink-0 text-good" />;
+  }
+  if (tone === "warn") {
+    return <AlertTriangle className="h-5 w-5 shrink-0 text-warn" />;
+  }
+  if (tone === "bad") {
+    return <XCircle className="h-5 w-5 shrink-0 text-bad" />;
+  }
+  return <HelpCircle className="h-5 w-5 shrink-0 text-slate-400" />;
 }
 
 function SummaryCell({ label, value }: { label: string; value: string }) {
