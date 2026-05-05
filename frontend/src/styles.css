@@ -17,3 +17,27 @@ button,
 input {
   font: inherit;
 }
+
+.themed-scrollbar {
+  scrollbar-color: #64748b #263244;
+  scrollbar-width: thin;
+}
+
+.themed-scrollbar::-webkit-scrollbar {
+  width: 10px;
+}
+
+.themed-scrollbar::-webkit-scrollbar-track {
+  background: #263244;
+  border-radius: 999px;
+}
+
+.themed-scrollbar::-webkit-scrollbar-thumb {
+  background: #64748b;
+  border: 2px solid #263244;
+  border-radius: 999px;
+}
+
+.themed-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #91bdf4;
+}

@@ -73,7 +73,7 @@ export function App() {
         </div>
 
         <section className="grid min-h-0 flex-1 gap-6 pb-5 lg:grid-cols-[minmax(320px,420px)_1fr]">
-          <div className="min-h-0 overflow-y-auto pr-1">
+          <div className="themed-scrollbar min-h-0 overflow-y-auto pr-1">
             <div className="grid gap-3" aria-label="Script summaries">
               {scripts.map((script) => (
                 <ScriptSummaryCard
@@ -86,7 +86,7 @@ export function App() {
             </div>
           </div>
 
-          <div className="min-h-0 overflow-y-auto">
+          <div className="min-h-0">
             {activeScript ? (
               <ScriptDetail
                 script={activeScript}
@@ -188,8 +188,8 @@ function ScriptDetail({
   const statusCounts = getSessionStatusCounts(script.recent_sessions);
 
   return (
-    <section className="flex flex-col gap-4">
-      <div className="border-b border-line pb-4">
+    <section className="flex h-full min-h-0 flex-col gap-4">
+      <div className="shrink-0 border-b border-line pb-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
             <h2 className="text-xl font-semibold text-brand">
@@ -213,17 +213,19 @@ function ScriptDetail({
         </div>
       </div>
 
-      {loading ? <StateMessage text="Refreshing script detail..." /> : null}
+      <div className="themed-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
+        {loading ? <StateMessage text="Refreshing script detail..." /> : null}
 
-      {script.recent_sessions.length > 0 ? (
-        <div className="grid gap-3">
-          {script.recent_sessions.map((session) => (
-            <SessionRow key={session.id} session={session} />
-          ))}
-        </div>
-      ) : (
-        <StateMessage text="No recent sessions found for this script." />
-      )}
+        {script.recent_sessions.length > 0 ? (
+          <div className="grid gap-3">
+            {script.recent_sessions.map((session) => (
+              <SessionRow key={session.id} session={session} />
+            ))}
+          </div>
+        ) : (
+          <StateMessage text="No recent sessions found for this script." />
+        )}
+      </div>
     </section>
   );
 }
