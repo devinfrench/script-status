@@ -144,12 +144,50 @@ Stop the app:
 docker compose -f docker-compose.prod.yml down
 ```
 
-Pull latest code and redeploy:
+If the repo is hosted on GitHub, GitLab, or another Git server, pull latest code and redeploy:
 
 ```bash
 git pull
 docker compose -f docker-compose.prod.yml up -d --build
 ```
+
+You can also use the included redeploy script:
+
+```bash
+git pull
+bash infra/redeploy.sh
+```
+
+Or let the script pull first:
+
+```bash
+bash infra/redeploy.sh --pull
+```
+
+The script runs `docker compose -f docker-compose.prod.yml up -d --build` and then prints container status.
+
+If you are not hosting the Git repository anywhere, redeploy from your local machine by sending a fresh copy of the current commit:
+
+```bash
+git archive --format tar HEAD | ssh user@your-server-ip "rm -rf /opt/script-status.next && mkdir -p /opt/script-status.next && tar -x -C /opt/script-status.next"
+ssh user@your-server-ip "cp /opt/script-status/infra/env/backend.env /opt/script-status.next/infra/env/backend.env && cp /opt/script-status/infra/env/postgres.env /opt/script-status.next/infra/env/postgres.env"
+ssh user@your-server-ip "cd /opt && mv script-status script-status.previous && mv script-status.next script-status && cd script-status && docker compose -f docker-compose.prod.yml up -d --build"
+```
+
+After you confirm the new deployment is working, remove the previous copy on the server:
+
+```bash
+ssh user@your-server-ip "rm -rf /opt/script-status.previous"
+```
+
+If you need to include uncommitted local files, use `rsync` instead:
+
+```bash
+rsync -av --delete --exclude-from=.gitignore --exclude=.git ./ user@your-server-ip:/opt/script-status/
+ssh user@your-server-ip "cd /opt/script-status && docker compose -f docker-compose.prod.yml up -d --build"
+```
+
+Be careful with `rsync --delete`: it removes files on the server that do not exist locally. Keep production env files in `infra/env/backend.env` and `infra/env/postgres.env`, or exclude them explicitly if your local copies should not overwrite the server copies.
 
 Do not use `down -v` in production unless you intentionally want to delete the Postgres volume.
 
