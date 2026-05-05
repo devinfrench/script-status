@@ -43,11 +43,21 @@ git clone https://github.com/your-user/script-status.git
 cd script-status
 ```
 
-Direct copy approach:
+Direct copy approach that respects Git tracking:
 
 ```bash
-scp -r ./script-status user@your-server-ip:/opt/script-status
+git archive --format tar HEAD | ssh user@your-server-ip "mkdir -p /opt/script-status && tar -x -C /opt/script-status"
 ```
+
+This copies only files committed to Git, so ignored local folders such as `.venv`, `node_modules`, and `dist` are not sent.
+
+If you want to copy uncommitted files too, use `rsync` with `.gitignore` as an exclude file:
+
+```bash
+rsync -av --exclude-from=.gitignore --exclude=.git ./ user@your-server-ip:/opt/script-status/
+```
+
+Avoid raw `scp -r` for this project because it will copy ignored local development files unless you manually exclude them.
 
 Then SSH into the server:
 
