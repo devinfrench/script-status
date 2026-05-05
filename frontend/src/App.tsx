@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type React from "react";
 import {
   Activity,
@@ -8,7 +8,6 @@ import {
   Clock,
   Database,
   HelpCircle,
-  Search,
   TrendingUp,
   XCircle,
 } from "lucide-react";
@@ -19,7 +18,6 @@ import type { ScriptHealth, SessionRecord } from "./types";
 
 export function App() {
   const [selectedScript, setSelectedScript] = useState<string | null>(null);
-  const [filter, setFilter] = useState("");
   const scriptsQuery = useQuery({
     queryKey: ["scripts"],
     queryFn: fetchScripts,
@@ -31,63 +29,53 @@ export function App() {
   });
 
   const scripts = scriptsQuery.data ?? [];
-  const filteredScripts = useMemo(() => {
-    const normalized = filter.trim().toLowerCase();
-    if (!normalized) return scripts;
-    return scripts.filter((script) =>
-      script.script_name.toLowerCase().includes(normalized),
-    );
-  }, [filter, scripts]);
-
   const activeScript =
     detailQuery.data ??
     scripts.find((script) => script.script_name === selectedScript) ??
     scripts[0];
 
   return (
-    <main className="min-h-screen bg-panel text-ink">
-      <div className="mx-auto flex w-full max-w-7xl flex-col gap-6 px-4 py-5 sm:px-6 lg:px-8">
-        <header className="flex flex-col gap-3 border-b border-line pb-5 md:flex-row md:items-end md:justify-between">
-          <div>
-            <h1 className="text-2xl font-semibold tracking-normal sm:text-3xl">
-              Script Status
-            </h1>
-            <p className="mt-1 text-sm text-slate-600">
-              Bot sessions and recent health by script.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-3 text-sm">
-            <Metric label="Scripts" value={scripts.length.toString()} />
-            <Metric
-              label="Runs"
-              value={formatNumber(
-                scripts.reduce((sum, script) => sum + script.run_count, 0),
-              )}
-            />
+    <main className="h-screen overflow-hidden bg-panel text-ink">
+      <div className="mx-auto flex h-full w-full max-w-7xl flex-col px-4 sm:px-6 lg:px-8">
+        <header className="shrink-0 border-b border-line bg-panel/95 py-5">
+          <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
+            <div>
+              <h1 className="text-2xl font-semibold tracking-normal text-brand sm:text-3xl">
+                Script Status
+              </h1>
+              <p className="mt-1 text-sm text-slate-300">
+                Bot sessions and recent health by script.
+              </p>
+            </div>
+            <div className="grid gap-3 text-sm">
+              <Metric
+                label="Sessions"
+                value={formatNumber(
+                  scripts.reduce((sum, script) => sum + script.run_count, 0),
+                )}
+              />
+            </div>
           </div>
         </header>
 
-        {scriptsQuery.isLoading ? (
-          <StateMessage text="Loading script health..." />
-        ) : null}
-        {scriptsQuery.isError ? (
-          <StateMessage text="Unable to load script health." tone="bad" />
-        ) : null}
+        <div className="flex shrink-0 flex-col gap-3 py-4">
+          {scriptsQuery.isLoading ? (
+            <StateMessage text="Loading sessions..." />
+          ) : null}
+          {scriptsQuery.isError ? (
+            <StateMessage text="Unable to load sessions." tone="bad" />
+          ) : null}
+          {!scriptsQuery.isLoading &&
+          !scriptsQuery.isError &&
+          scripts.length === 0 ? (
+            <StateMessage text="No sessions found." />
+          ) : null}
+        </div>
 
-        <section className="grid gap-6 lg:grid-cols-[minmax(320px,420px)_1fr]">
-          <div className="flex flex-col gap-3">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-500" />
-              <input
-                aria-label="Filter scripts"
-                className="h-10 w-full rounded-md border border-line bg-white pl-9 pr-3 text-sm outline-none ring-good/20 transition focus:border-good focus:ring-4"
-                placeholder="Filter scripts"
-                value={filter}
-                onChange={(event) => setFilter(event.target.value)}
-              />
-            </div>
+        <section className="grid min-h-0 flex-1 gap-6 pb-5 lg:grid-cols-[minmax(320px,420px)_1fr]">
+          <div className="min-h-0 overflow-y-auto pr-1">
             <div className="grid gap-3" aria-label="Script summaries">
-              {filteredScripts.map((script) => (
+              {scripts.map((script) => (
                 <ScriptSummaryCard
                   key={script.script_name}
                   script={script}
@@ -95,21 +83,16 @@ export function App() {
                   onSelect={() => setSelectedScript(script.script_name)}
                 />
               ))}
-              {!scriptsQuery.isLoading && filteredScripts.length === 0 ? (
-                <StateMessage text="No scripts match the current filter." />
-              ) : null}
             </div>
           </div>
 
-          <div>
+          <div className="min-h-0 overflow-y-auto">
             {activeScript ? (
               <ScriptDetail
                 script={activeScript}
                 loading={detailQuery.isFetching && selectedScript !== null}
               />
-            ) : (
-              <StateMessage text="No sessions found." />
-            )}
+            ) : null}
           </div>
         </section>
       </div>
@@ -119,8 +102,8 @@ export function App() {
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="min-w-20 rounded-md border border-line bg-white px-3 py-2">
-      <div className="text-xs text-slate-500">{label}</div>
+    <div className="min-w-20 rounded-md border border-line bg-surface px-3 py-2 shadow-sm">
+      <div className="text-xs text-slate-300">{label}</div>
       <div className="truncate text-base font-semibold">{value}</div>
     </div>
   );
@@ -135,7 +118,7 @@ function StateMessage({
 }) {
   return (
     <div
-      className={`rounded-md border px-4 py-3 text-sm ${tone === "bad" ? "border-red-200 bg-red-50 text-bad" : "border-line bg-white text-slate-600"}`}
+      className={`rounded-md border px-4 py-3 text-sm ${tone === "bad" ? "border-red-400/50 bg-red-950/30 text-bad" : "border-line bg-surface text-slate-300"}`}
     >
       {text}
     </div>
@@ -156,8 +139,8 @@ function ScriptSummaryCard({
     <button
       type="button"
       onClick={onSelect}
-      className={`rounded-md border bg-white p-4 text-left transition hover:border-good hover:shadow-sm ${
-        selected ? "border-good ring-2 ring-good/15" : "border-line"
+      className={`rounded-md border bg-surface p-4 text-left shadow-sm transition hover:border-good hover:bg-muted hover:shadow ${
+        selected ? "border-good bg-muted ring-2 ring-good/25" : "border-line"
       }`}
     >
       <div className="flex items-start justify-between gap-3">
@@ -165,7 +148,7 @@ function ScriptSummaryCard({
           <div className="truncate text-base font-semibold">
             {script.script_name}
           </div>
-          <div className="mt-1 text-xs text-slate-500">
+          <div className="mt-1 text-xs text-slate-300">
             Latest {formatDateTime(script.latest_stopped_at)}
           </div>
         </div>
@@ -189,7 +172,7 @@ function ScriptSummaryCard({
 function SummaryCell({ label, value }: { label: string; value: string }) {
   return (
     <div>
-      <div className="text-slate-500">{label}</div>
+      <div className="text-slate-300">{label}</div>
       <div className="truncate font-semibold">{value}</div>
     </div>
   );
@@ -202,70 +185,94 @@ function ScriptDetail({
   script: ScriptHealth;
   loading: boolean;
 }) {
+  const statusCounts = getSessionStatusCounts(script.recent_sessions);
+
   return (
     <section className="flex flex-col gap-4">
       <div className="border-b border-line pb-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
-            <h2 className="text-xl font-semibold">{script.script_name}</h2>
-            <p className="mt-1 text-sm text-slate-600">
+            <h2 className="text-xl font-semibold text-brand">
+              {script.script_name}
+            </h2>
+            <p className="mt-1 text-sm text-slate-300">
               {script.run_count} runs,{" "}
               {formatRuntime(script.average_runtime_seconds)} average runtime.
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs">
-            <Pill
-              icon={<CheckCircle2 className="h-4 w-4" />}
-              label={`${script.recent_success_count} success`}
-              tone="good"
-            />
-            <Pill
-              icon={<XCircle className="h-4 w-4" />}
-              label={`${script.recent_failure_count} failure`}
-              tone="bad"
-            />
-            <Pill
-              icon={<AlertTriangle className="h-4 w-4" />}
-              label={`${script.recent_unknown_count} unknown`}
-              tone="warn"
-            />
+            {statusCounts.map(({ status, count }) => (
+              <Pill
+                key={status}
+                icon={getStatusIcon(status)}
+                label={`${count} ${formatStatus(status)}`}
+                className={getStatusPillClass(status)}
+              />
+            ))}
           </div>
         </div>
       </div>
 
       {loading ? <StateMessage text="Refreshing script detail..." /> : null}
 
-      <div className="grid gap-3">
-        {script.recent_sessions.map((session) => (
-          <SessionRow key={session.id} session={session} />
-        ))}
-      </div>
+      {script.recent_sessions.length > 0 ? (
+        <div className="grid gap-3">
+          {script.recent_sessions.map((session) => (
+            <SessionRow key={session.id} session={session} />
+          ))}
+        </div>
+      ) : (
+        <StateMessage text="No recent sessions found for this script." />
+      )}
     </section>
   );
+}
+
+function getSessionStatusCounts(sessions: SessionRecord[]) {
+  const counts = new Map<string, number>();
+  for (const session of sessions) {
+    const normalized = session.status.toUpperCase();
+    counts.set(normalized, (counts.get(normalized) ?? 0) + 1);
+  }
+  return Array.from(counts.entries())
+    .map(([status, count]) => ({ status, count }))
+    .sort((left, right) => left.status.localeCompare(right.status));
 }
 
 function Pill({
   icon,
   label,
-  tone,
+  className,
 }: {
   icon: React.ReactNode;
   label: string;
-  tone: "good" | "bad" | "warn";
+  className: string;
 }) {
-  const toneClass = {
-    good: "border-green-200 bg-green-50 text-good",
-    bad: "border-red-200 bg-red-50 text-bad",
-    warn: "border-amber-200 bg-amber-50 text-warn",
-  }[tone];
   return (
     <span
-      className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 ${toneClass}`}
+      className={`inline-flex items-center gap-1 rounded-md border px-2 py-1 ${className}`}
     >
       {icon}
       {label}
     </span>
   );
+}
+
+function getStatusPillClass(status: string): string {
+  const normalized = status.toUpperCase();
+  if (normalized === "SUCCESS") {
+    return "border-green-400/40 bg-green-950/30 text-good";
+  }
+  if (normalized === "UNKNOWN") {
+    return "border-amber-400/40 bg-amber-950/30 text-warn";
+  }
+  if (normalized === "MISSING_REQUIREMENTS") {
+    return "border-slate-400/50 bg-muted text-slate-200";
+  }
+  if (normalized === "STUCK" || normalized === "ERROR") {
+    return "border-red-400/40 bg-red-950/30 text-bad";
+  }
+  return "border-line bg-surface text-slate-300";
 }
 
 function SessionRow({ session }: { session: SessionRecord }) {
@@ -274,9 +281,12 @@ function SessionRow({ session }: { session: SessionRecord }) {
     calculateXpPerHour(session);
   const level = getNumberField(session.runtime_info, "level");
   const levelsGained = getNumberField(session.runtime_info, "levels_gained");
+  const highlightClass = getStatusHighlightClass(session.status);
 
   return (
-    <article className="rounded-md border border-line bg-white p-4">
+    <article
+      className={`rounded-md border bg-surface p-4 shadow-sm ${highlightClass}`}
+    >
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SessionFact
           icon={getStatusIcon(session.status)}
@@ -323,6 +333,23 @@ function SessionRow({ session }: { session: SessionRecord }) {
   );
 }
 
+function getStatusHighlightClass(status: string): string {
+  const normalized = status.toUpperCase();
+  if (normalized === "SUCCESS") {
+    return "border-good ring-2 ring-good/25";
+  }
+  if (normalized === "UNKNOWN") {
+    return "border-warn ring-2 ring-warn/25";
+  }
+  if (normalized === "MISSING_REQUIREMENTS") {
+    return "border-slate-400 ring-2 ring-slate-400/25";
+  }
+  if (normalized === "STUCK" || normalized === "ERROR") {
+    return "border-bad ring-2 ring-bad/25";
+  }
+  return "border-line";
+}
+
 function getStatusIcon(status: string): React.ReactNode {
   const normalized = status.toUpperCase();
   if (normalized === "SUCCESS") {
@@ -331,14 +358,13 @@ function getStatusIcon(status: string): React.ReactNode {
   if (normalized === "UNKNOWN") {
     return <AlertTriangle className="h-4 w-4 text-warn" />;
   }
-  if (
-    normalized === "STUCK" ||
-    normalized === "MISSING_REQUIREMENTS" ||
-    normalized === "ERROR"
-  ) {
+  if (normalized === "MISSING_REQUIREMENTS") {
+    return <AlertTriangle className="h-4 w-4 text-slate-300" />;
+  }
+  if (normalized === "STUCK" || normalized === "ERROR") {
     return <XCircle className="h-4 w-4 text-bad" />;
   }
-  return <HelpCircle className="h-4 w-4 text-slate-500" />;
+  return <HelpCircle className="h-4 w-4 text-slate-400" />;
 }
 
 function SessionFact({
@@ -352,7 +378,7 @@ function SessionFact({
 }) {
   return (
     <div className="min-w-0">
-      <div className="flex items-center gap-1 text-xs text-slate-500">
+      <div className="flex items-center gap-1 text-xs text-slate-300">
         {icon}
         {label}
       </div>

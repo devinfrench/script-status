@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen, waitFor, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App";
@@ -63,6 +63,9 @@ describe("App", () => {
         if (url.includes("/api/scripts/Agility/health")) {
           return Promise.resolve(new Response(JSON.stringify(scripts[0]), { status: 200 }));
         }
+        if (url.includes("/api/scripts/Fishing/health")) {
+          return Promise.resolve(new Response(JSON.stringify(scripts[1]), { status: 200 }));
+        }
         return Promise.resolve(new Response(JSON.stringify(scripts), { status: 200 }));
       })
     );
@@ -73,6 +76,7 @@ describe("App", () => {
 
     expect((await screen.findAllByText("Agility")).length).toBeGreaterThan(0);
     expect(screen.getByText("Fishing")).toBeInTheDocument();
+    expect(screen.getByText("Sessions")).toBeInTheDocument();
     expect(screen.getByText("XP/hr")).toBeInTheDocument();
     expect(screen.getByText("Status")).toBeInTheDocument();
     expect(screen.getByText("Missing Requirements")).toBeInTheDocument();
@@ -82,16 +86,56 @@ describe("App", () => {
     expect(screen.getByText("Levels gained")).toBeInTheDocument();
     expect(screen.getAllByText("1").length).toBeGreaterThan(0);
     expect(screen.queryByText(/bank pin/)).not.toBeInTheDocument();
+    const summaries = screen.getByLabelText("Script summaries");
+    expect(within(summaries).getByText("Agility")).toBeInTheDocument();
+    expect(within(summaries).getByText("Fishing")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Filter scripts")).not.toBeInTheDocument();
   });
 
-  it("filters scripts", async () => {
+  it("shows a single load error when sessions cannot be loaded", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(new Response("server error", { status: 500 })),
+      ),
+    );
+
+    renderApp();
+
+    expect(await screen.findByText("Unable to load sessions.")).toBeInTheDocument();
+    expect(screen.queryByText("No sessions found.")).not.toBeInTheDocument();
+  });
+
+  it("shows a single loading message while sessions load", () => {
+    vi.stubGlobal("fetch", vi.fn(() => new Promise(() => undefined)));
+
+    renderApp();
+
+    expect(screen.getByText("Loading sessions...")).toBeInTheDocument();
+    expect(screen.queryByText("No sessions found.")).not.toBeInTheDocument();
+  });
+
+  it("shows a global empty message when no scripts are found", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn(() =>
+        Promise.resolve(new Response(JSON.stringify([]), { status: 200 })),
+      ),
+    );
+
+    renderApp();
+
+    expect(await screen.findByText("No sessions found.")).toBeInTheDocument();
+  });
+
+  it("shows a right column message when the selected script has no recent sessions", async () => {
     renderApp();
 
     await screen.findAllByText("Agility");
-    await userEvent.type(screen.getByLabelText("Filter scripts"), "fish");
+    await userEvent.click(screen.getByText("Fishing"));
 
-    const summaries = screen.getByLabelText("Script summaries");
-    await waitFor(() => expect(within(summaries).queryByText("Agility")).not.toBeInTheDocument());
-    expect(within(summaries).getByText("Fishing")).toBeInTheDocument();
+    expect(
+      await screen.findByText("No recent sessions found for this script."),
+    ).toBeInTheDocument();
   });
 });
