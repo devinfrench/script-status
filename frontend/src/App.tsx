@@ -14,6 +14,7 @@ import {
 import { useQuery } from "@tanstack/react-query";
 import { fetchScriptHealth, fetchScripts } from "./api";
 import { formatDateTime, formatNumber, formatRuntime } from "./format";
+import { LogoMark } from "./LogoMark";
 import type { ScriptHealth, SessionRecord } from "./types";
 
 export function App() {
@@ -40,12 +41,12 @@ export function App() {
         <header className="shrink-0 border-b border-line bg-panel/95 py-5">
           <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
             <div>
-              <h1 className="text-2xl font-semibold tracking-normal text-brand sm:text-3xl">
-                Script Status
+              <h1 className="flex items-center gap-1.5 text-2xl font-semibold tracking-normal text-brand sm:gap-2 sm:text-3xl">
+                <span className="flex h-8 w-8 shrink-0 items-center text-brand sm:h-9 sm:w-9">
+                  <LogoMark />
+                </span>
+                <span>Script Status</span>
               </h1>
-              <p className="mt-1 text-sm text-slate-300">
-                Bot sessions and recent health by script.
-              </p>
             </div>
             <div className="grid gap-3 text-sm">
               <Metric
