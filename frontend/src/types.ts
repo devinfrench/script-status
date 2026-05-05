@@ -7,6 +7,7 @@ export interface SessionRecord {
   started_at: string;
   run_time_seconds: number;
   experience_gained: number;
+  status: string;
   runtime_info: RuntimeInfo;
 }
 

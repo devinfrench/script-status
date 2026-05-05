@@ -22,6 +22,7 @@ const scripts = [
         started_at: "2026-05-04T11:58:00Z",
         run_time_seconds: 120,
         experience_gained: 1500,
+        status: "MISSING_REQUIREMENTS",
         runtime_info: {
           status: "failed",
           reason: "bank pin",
@@ -73,6 +74,8 @@ describe("App", () => {
     expect((await screen.findAllByText("Agility")).length).toBeGreaterThan(0);
     expect(screen.getByText("Fishing")).toBeInTheDocument();
     expect(screen.getByText("XP/hr")).toBeInTheDocument();
+    expect(screen.getByText("Status")).toBeInTheDocument();
+    expect(screen.getByText("Missing Requirements")).toBeInTheDocument();
     expect(screen.getByText("45,000")).toBeInTheDocument();
     expect(screen.getByText("Level")).toBeInTheDocument();
     expect(screen.getByText("82")).toBeInTheDocument();

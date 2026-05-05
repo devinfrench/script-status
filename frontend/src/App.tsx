@@ -7,6 +7,7 @@ import {
   CheckCircle2,
   Clock,
   Database,
+  HelpCircle,
   Search,
   TrendingUp,
   XCircle,
@@ -278,6 +279,11 @@ function SessionRow({ session }: { session: SessionRecord }) {
     <article className="rounded-md border border-line bg-white p-4">
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SessionFact
+          icon={getStatusIcon(session.status)}
+          label="Status"
+          value={formatStatus(session.status)}
+        />
+        <SessionFact
           icon={<Clock className="h-4 w-4" />}
           label="Started"
           value={formatDateTime(session.started_at)}
@@ -315,6 +321,24 @@ function SessionRow({ session }: { session: SessionRecord }) {
       </div>
     </article>
   );
+}
+
+function getStatusIcon(status: string): React.ReactNode {
+  const normalized = status.toUpperCase();
+  if (normalized === "SUCCESS") {
+    return <CheckCircle2 className="h-4 w-4 text-good" />;
+  }
+  if (normalized === "UNKNOWN") {
+    return <AlertTriangle className="h-4 w-4 text-warn" />;
+  }
+  if (
+    normalized === "STUCK" ||
+    normalized === "MISSING_REQUIREMENTS" ||
+    normalized === "ERROR"
+  ) {
+    return <XCircle className="h-4 w-4 text-bad" />;
+  }
+  return <HelpCircle className="h-4 w-4 text-slate-500" />;
 }
 
 function SessionFact({
@@ -363,4 +387,12 @@ function calculateXpPerHour(session: SessionRecord): number | null {
 
 function formatOptionalNumber(value: number | null): string {
   return value === null ? "N/A" : formatNumber(value);
+}
+
+function formatStatus(status: string): string {
+  return status
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(" ");
 }

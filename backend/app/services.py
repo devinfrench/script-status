@@ -1,20 +1,21 @@
 from datetime import UTC, datetime, timedelta
 
-from sqlalchemy import desc, func, select
+from sqlalchemy import case, desc, func, select
 from sqlalchemy.orm import Session
 
 from app.models import SessionRecord
 from app.schemas import ScriptHealth, SessionRead
 
 
-UNKNOWN_RUNTIME_SECONDS = 30 * 60
 HEALTH_WINDOW_DAYS = 30
+AVERAGE_EXCLUDED_STATUSES = {"MISSING_REQUIREMENTS"}
 
 
 def _session_health(record: SessionRecord) -> str:
-    if record.experience_gained > 0:
+    status = record.status.upper()
+    if status == "SUCCESS":
         return "success"
-    if record.run_time_seconds < UNKNOWN_RUNTIME_SECONDS:
+    if status == "UNKNOWN":
         return "unknown"
     return "failure"
 
@@ -28,11 +29,20 @@ def recent_sessions_cutoff(now: datetime | None = None) -> datetime:
 
 def build_health(db: Session, script_name: str | None = None, limit: int = 25) -> list[ScriptHealth]:
     cutoff = recent_sessions_cutoff()
+    average_runtime_seconds = func.avg(
+        case(
+            (
+                SessionRecord.status.not_in(AVERAGE_EXCLUDED_STATUSES),
+                SessionRecord.run_time_seconds,
+            ),
+            else_=None,
+        )
+    )
     aggregate_stmt = (
         select(
             SessionRecord.script_name,
             func.count(SessionRecord.id).label("run_count"),
-            func.avg(SessionRecord.run_time_seconds).label("average_runtime_seconds"),
+            average_runtime_seconds.label("average_runtime_seconds"),
             func.max(SessionRecord.stopped_at).label("latest_stopped_at"),
             func.coalesce(func.sum(SessionRecord.experience_gained), 0).label("total_experience_gained"),
         )

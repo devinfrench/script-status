@@ -1,7 +1,10 @@
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
+
+
+DEFAULT_SESSION_STATUS = "UNKNOWN"
 
 
 class SessionCreate(BaseModel):
@@ -9,7 +12,16 @@ class SessionCreate(BaseModel):
     stopped_at: datetime
     run_time_seconds: int = Field(ge=0, le=2_147_483_647)
     experience_gained: int = Field(ge=0)
+    status: str = Field(default=DEFAULT_SESSION_STATUS, min_length=1, max_length=64)
     runtime_info: dict[str, Any] = Field(default_factory=dict)
+
+    @field_validator("status")
+    @classmethod
+    def normalize_status(cls, value: str) -> str:
+        normalized = value.strip().upper()
+        if not normalized:
+            raise ValueError("status must not be blank")
+        return normalized
 
 
 class SessionRead(BaseModel):
@@ -19,6 +31,7 @@ class SessionRead(BaseModel):
     started_at: datetime
     run_time_seconds: int
     experience_gained: int
+    status: str
     runtime_info: dict[str, Any]
 
     model_config = ConfigDict(from_attributes=True)
@@ -35,6 +48,7 @@ class SessionRead(BaseModel):
             started_at=stopped_at - timedelta(seconds=record.run_time_seconds),
             run_time_seconds=record.run_time_seconds,
             experience_gained=record.experience_gained,
+            status=record.status or DEFAULT_SESSION_STATUS,
             runtime_info=record.runtime_info or {},
         )
 

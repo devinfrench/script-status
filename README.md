@@ -50,6 +50,7 @@ curl -X POST http://localhost:8000/api/sessions \
     "stopped_at": "2026-05-04T12:00:00Z",
     "run_time_seconds": 5400,
     "experience_gained": 32000,
+    "status": "SUCCESS",
     "runtime_info": {"success": true, "lap_count": 120}
   }'
 ```
@@ -64,11 +65,20 @@ Available endpoints:
 `started_at` is calculated as `stopped_at - run_time_seconds`; it is not stored.
 
 The dashboard and script health endpoints only use sessions from the past 30 days for visible sessions, run counts, average runtime, recent XP totals, and health counts.
+Sessions with `MISSING_REQUIREMENTS` are shown and counted, but are excluded from average runtime calculations.
 
-Health counts are inferred from runtime and XP:
+`status` is stored as a flexible string so new statuses can be added without changing the database type. If omitted, it defaults to `UNKNOWN`. Current sender statuses are:
 
-- Success: `experience_gained > 0`
-- Unknown: `experience_gained = 0` and `run_time_seconds < 1800`
-- Failure: `experience_gained = 0` and `run_time_seconds >= 1800`
+- `SUCCESS`
+- `STUCK`
+- `MISSING_REQUIREMENTS`
+- `ERROR`
+- `UNKNOWN`
+
+Health counts use the explicit status:
+
+- Success: `SUCCESS`
+- Unknown: `UNKNOWN`
+- Failure: any other status
 
 Fields such as `success` or `status` inside `runtime_info` are stored but are not used for health classification.

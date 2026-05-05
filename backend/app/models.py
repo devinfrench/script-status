@@ -13,6 +13,7 @@ class SessionRecord(Base):
     __table_args__ = (
         CheckConstraint("run_time_seconds >= 0", name="ck_sessions_run_time_seconds_nonnegative"),
         CheckConstraint("experience_gained >= 0", name="ck_sessions_experience_gained_nonnegative"),
+        CheckConstraint("length(status) > 0", name="ck_sessions_status_nonempty"),
     )
 
     id: Mapped[int] = mapped_column(primary_key=True, index=True)
@@ -20,4 +21,5 @@ class SessionRecord(Base):
     stopped_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True, nullable=False)
     run_time_seconds: Mapped[int] = mapped_column(Integer, nullable=False)
     experience_gained: Mapped[int] = mapped_column(Integer, nullable=False)
+    status: Mapped[str] = mapped_column(String(64), nullable=False, default="UNKNOWN")
     runtime_info: Mapped[dict[str, Any]] = mapped_column(JSONB, nullable=False, default=dict)
