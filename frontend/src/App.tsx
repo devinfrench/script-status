@@ -368,6 +368,7 @@ function SessionRow({ session }: { session: SessionRecord }) {
           icon={getStatusIcon(session.status)}
           label="Status"
           value={formatStatus(session.status)}
+          valueClassName={getStatusTextClass(session.status)}
         />
         <SessionFact
           icon={<Clock className="h-4 w-4" />}
@@ -426,6 +427,23 @@ function getStatusHighlightClass(status: string): string {
   return "border-line";
 }
 
+function getStatusTextClass(status: string): string {
+  const normalized = status.toUpperCase();
+  if (normalized === "SUCCESS") {
+    return "text-good";
+  }
+  if (normalized === "UNKNOWN") {
+    return "text-warn";
+  }
+  if (normalized === "MISSING_REQUIREMENTS") {
+    return "text-slate-300";
+  }
+  if (normalized === "STUCK" || normalized === "ERROR") {
+    return "text-bad";
+  }
+  return "text-slate-300";
+}
+
 function getStatusIcon(status: string): React.ReactNode {
   const normalized = status.toUpperCase();
   if (normalized === "SUCCESS") {
@@ -447,10 +465,12 @@ function SessionFact({
   icon,
   label,
   value,
+  valueClassName = "",
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
+  valueClassName?: string;
 }) {
   return (
     <div className="min-w-0">
@@ -458,7 +478,9 @@ function SessionFact({
         {icon}
         {label}
       </div>
-      <div className="mt-1 truncate text-sm font-semibold">{value}</div>
+      <div className={`mt-1 truncate text-sm font-semibold ${valueClassName}`}>
+        {value}
+      </div>
     </div>
   );
 }
