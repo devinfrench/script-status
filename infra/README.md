@@ -14,17 +14,23 @@ cp infra/env/postgres.env.example infra/env/postgres.env
 ```
 
 4. Edit passwords and public CORS origins in `infra/env/*.env`.
-5. Start the production-style stack:
+5. Create a project-root `.env` file with your Caddy hostname:
+
+```env
+SITE_DOMAIN=script-status.example.com
+```
+
+6. Start the production-style stack:
 
 ```bash
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-The production compose file exposes the frontend on port `80`. The frontend container proxies `/api` to the backend container.
+The production compose file exposes Caddy on ports `80` and `443`. Caddy terminates HTTPS for your configured domain and forwards traffic to the frontend container, which proxies `/api` to the backend container.
 
 ## TLS
 
-For HTTPS, put Caddy or nginx in front of the stack. A Caddy example is in `infra/reverse-proxy/Caddyfile.example`.
+HTTPS is handled by the Caddy service in `docker-compose.prod.yml` using `infra/reverse-proxy/Caddyfile`. Set `SITE_DOMAIN` to your production hostname, make sure that hostname has an `A` record pointing at the VPS, and allow inbound `80` and `443` through the VPS firewall.
 
 ## Backups
 

@@ -11,7 +11,7 @@ Open only these inbound ports:
 ```text
 22   SSH
 80   HTTP
-443  HTTPS, once TLS is configured
+443  HTTPS
 ```
 
 Do not expose PostgreSQL publicly. The production compose file keeps Postgres internal to Docker, which is the intended setup.
@@ -102,6 +102,24 @@ DATABASE_URL=postgresql+psycopg://script_status:your-strong-password@db:5432/scr
 CORS_ORIGINS=["https://your-domain.com"]
 ```
 
+For your production domain:
+
+```env
+CORS_ORIGINS=["https://script-status.example.com"]
+```
+
+Create a project-root `.env` file for Docker Compose and the redeploy script:
+
+```bash
+nano .env
+```
+
+Set the Caddy hostname:
+
+```env
+SITE_DOMAIN=script-status.example.com
+```
+
 If you are testing by IP before setting up a domain:
 
 ```env
@@ -131,7 +149,7 @@ docker compose -f docker-compose.prod.yml logs -f
 The app should be available at:
 
 ```text
-http://your-server-ip
+https://script-status.example.com
 ```
 
 The backend container runs Alembic migrations before starting the API.
@@ -216,13 +234,13 @@ Schedule backups with cron and copy them off the VM.
 
 ## 7. HTTPS
 
-For production, use HTTPS. The repo includes example reverse proxy files in:
+Production HTTPS is handled by Caddy in `docker-compose.prod.yml`. Before starting the stack, make sure:
 
-```text
-infra/reverse-proxy/
-```
+- Your production hostname has an `A` record pointing to the Droplet public IP.
+- The DigitalOcean firewall and any VM firewall allow inbound `80` and `443`.
+- No other process on the VPS is already using ports `80` or `443`.
 
-The simplest future improvement is adding Caddy to `docker-compose.prod.yml` so it can automatically issue and renew TLS certificates.
+Caddy stores certificates in the `caddy_data` Docker volume and renews them automatically.
 
 ## References
 
