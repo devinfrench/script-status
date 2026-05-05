@@ -1,0 +1,14 @@
+.venv/
+__pycache__/
+.pytest_cache/
+*.py[cod]
+
+node_modules/
+dist/
+*.tsbuildinfo
+
+.env
+backend/.env
+frontend/.env
+infra/env/backend.env
+infra/env/postgres.env
