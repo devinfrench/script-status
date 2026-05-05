@@ -1,3 +1,5 @@
+from datetime import UTC, datetime, timedelta
+
 from sqlalchemy import desc, func, select
 from sqlalchemy.orm import Session
 
@@ -5,23 +7,27 @@ from app.models import SessionRecord
 from app.schemas import ScriptHealth, SessionRead
 
 
-def _success_value(runtime_info: dict) -> bool | None:
-    value = runtime_info.get("success")
-    if isinstance(value, bool):
-        return value
+UNKNOWN_RUNTIME_SECONDS = 30 * 60
+HEALTH_WINDOW_DAYS = 30
 
-    status = runtime_info.get("status")
-    if isinstance(status, str):
-        normalized = status.strip().lower()
-        if normalized in {"success", "succeeded", "complete", "completed", "ok", "passed"}:
-            return True
-        if normalized in {"failure", "failed", "error", "errored", "crashed"}:
-            return False
 
-    return None
+def _session_health(record: SessionRecord) -> str:
+    if record.experience_gained > 0:
+        return "success"
+    if record.run_time_seconds < UNKNOWN_RUNTIME_SECONDS:
+        return "unknown"
+    return "failure"
+
+
+def recent_sessions_cutoff(now: datetime | None = None) -> datetime:
+    current_time = now or datetime.now(UTC)
+    if current_time.tzinfo is None:
+        current_time = current_time.replace(tzinfo=UTC)
+    return current_time - timedelta(days=HEALTH_WINDOW_DAYS)
 
 
 def build_health(db: Session, script_name: str | None = None, limit: int = 25) -> list[ScriptHealth]:
+    cutoff = recent_sessions_cutoff()
     aggregate_stmt = (
         select(
             SessionRecord.script_name,
@@ -30,6 +36,7 @@ def build_health(db: Session, script_name: str | None = None, limit: int = 25) -
             func.max(SessionRecord.stopped_at).label("latest_stopped_at"),
             func.coalesce(func.sum(SessionRecord.experience_gained), 0).label("total_experience_gained"),
         )
+        .where(SessionRecord.stopped_at >= cutoff)
         .group_by(SessionRecord.script_name)
         .order_by(desc("latest_stopped_at"))
     )
@@ -43,6 +50,7 @@ def build_health(db: Session, script_name: str | None = None, limit: int = 25) -
         session_stmt = (
             select(SessionRecord)
             .where(SessionRecord.script_name == row.script_name)
+            .where(SessionRecord.stopped_at >= cutoff)
             .order_by(SessionRecord.stopped_at.desc(), SessionRecord.id.desc())
             .limit(limit)
         )
@@ -53,10 +61,10 @@ def build_health(db: Session, script_name: str | None = None, limit: int = 25) -
         failure_count = 0
         unknown_count = 0
         for record in recent_records:
-            success = _success_value(record.runtime_info or {})
-            if success is True:
+            health = _session_health(record)
+            if health == "success":
                 success_count += 1
-            elif success is False:
+            elif health == "failure":
                 failure_count += 1
             else:
                 unknown_count += 1

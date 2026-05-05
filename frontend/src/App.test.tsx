@@ -22,7 +22,13 @@ const scripts = [
         started_at: "2026-05-04T11:58:00Z",
         run_time_seconds: 120,
         experience_gained: 1500,
-        runtime_info: { status: "failed", reason: "bank pin" }
+        runtime_info: {
+          status: "failed",
+          reason: "bank pin",
+          xp_gained_hr: 45000,
+          level: 82,
+          levels_gained: 1
+        }
       }
     ]
   },
@@ -61,12 +67,18 @@ describe("App", () => {
     );
   });
 
-  it("renders script summaries and session JSON details", async () => {
+  it("renders script summaries and selected session metrics", async () => {
     renderApp();
 
     expect((await screen.findAllByText("Agility")).length).toBeGreaterThan(0);
     expect(screen.getByText("Fishing")).toBeInTheDocument();
-    expect(screen.getByText(/bank pin/)).toBeInTheDocument();
+    expect(screen.getByText("XP/hr")).toBeInTheDocument();
+    expect(screen.getByText("45,000")).toBeInTheDocument();
+    expect(screen.getByText("Level")).toBeInTheDocument();
+    expect(screen.getByText("82")).toBeInTheDocument();
+    expect(screen.getByText("Levels gained")).toBeInTheDocument();
+    expect(screen.getAllByText("1").length).toBeGreaterThan(0);
+    expect(screen.queryByText(/bank pin/)).not.toBeInTheDocument();
   });
 
   it("filters scripts", async () => {

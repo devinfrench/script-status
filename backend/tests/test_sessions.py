@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime, timedelta, timezone
 
 
 def test_session_ingestion_calculates_started_at_and_stores_json(client):
@@ -53,16 +53,26 @@ def test_150_hour_runtime(client):
 
 
 def test_sessions_can_filter_by_script(client):
+    stopped_at = datetime.now(UTC).isoformat()
     for script_name in ["Miner", "Miner", "Crafter"]:
         client.post(
             "/api/sessions",
             json={
                 "script_name": script_name,
-                "stopped_at": "2026-05-04T12:00:00Z",
+                "stopped_at": stopped_at,
                 "run_time_seconds": 10,
                 "experience_gained": 1,
             },
         )
+    client.post(
+        "/api/sessions",
+        json={
+            "script_name": "Miner",
+            "stopped_at": (datetime.now(UTC) - timedelta(days=31)).isoformat(),
+            "run_time_seconds": 10,
+            "experience_gained": 1,
+        },
+    )
 
     response = client.get("/api/sessions?script_name=Miner")
 
@@ -71,10 +81,11 @@ def test_sessions_can_filter_by_script(client):
 
 
 def test_script_aggregation_and_health_counts(client):
+    stopped_at = datetime.now(UTC).isoformat()
     payloads = [
-        ("Agility", 100, 1000, {"success": True}),
-        ("Agility", 200, 2500, {"status": "failed"}),
-        ("Agility", 300, 3000, {"lap_count": 42}),
+        ("Agility", 100, 1000, {"success": False}),
+        ("Agility", 1800, 0, {"status": "ok"}),
+        ("Agility", 1799, 0, {"status": "failed"}),
         ("Fishing", 50, 750, {"status": "ok"}),
     ]
     for script_name, runtime, xp, runtime_info in payloads:
@@ -82,12 +93,22 @@ def test_script_aggregation_and_health_counts(client):
             "/api/sessions",
             json={
                 "script_name": script_name,
-                "stopped_at": datetime(2026, 5, 4, 12, 0, tzinfo=timezone.utc).isoformat(),
+                "stopped_at": stopped_at,
                 "run_time_seconds": runtime,
                 "experience_gained": xp,
                 "runtime_info": runtime_info,
             },
         )
+    client.post(
+        "/api/sessions",
+        json={
+            "script_name": "Agility",
+            "stopped_at": (datetime.now(UTC) - timedelta(days=31)).isoformat(),
+            "run_time_seconds": 9999,
+            "experience_gained": 999999,
+            "runtime_info": {"status": "ok"},
+        },
+    )
 
     response = client.get("/api/scripts/Agility/health")
 
@@ -95,8 +116,8 @@ def test_script_aggregation_and_health_counts(client):
     data = response.json()
     assert data["script_name"] == "Agility"
     assert data["run_count"] == 3
-    assert data["average_runtime_seconds"] == 200
-    assert data["total_experience_gained"] == 6500
+    assert data["average_runtime_seconds"] == 1233
+    assert data["total_experience_gained"] == 1000
     assert data["recent_success_count"] == 1
     assert data["recent_failure_count"] == 1
     assert data["recent_unknown_count"] == 1

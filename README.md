@@ -62,3 +62,13 @@ Available endpoints:
 - `GET /api/scripts/{script_name}/health`
 
 `started_at` is calculated as `stopped_at - run_time_seconds`; it is not stored.
+
+The dashboard and script health endpoints only use sessions from the past 30 days for visible sessions, run counts, average runtime, recent XP totals, and health counts.
+
+Health counts are inferred from runtime and XP:
+
+- Success: `experience_gained > 0`
+- Unknown: `experience_gained = 0` and `run_time_seconds < 1800`
+- Failure: `experience_gained = 0` and `run_time_seconds >= 1800`
+
+Fields such as `success` or `status` inside `runtime_info` are stored but are not used for health classification.

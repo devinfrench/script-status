@@ -7,7 +7,7 @@ from app.config import get_settings
 from app.database import get_db
 from app.models import SessionRecord
 from app.schemas import ScriptHealth, SessionCreate, SessionRead
-from app.services import build_health
+from app.services import build_health, recent_sessions_cutoff
 
 settings = get_settings()
 
@@ -41,7 +41,12 @@ def list_sessions(
     limit: int = Query(default=100, ge=1, le=500),
     db: Session = Depends(get_db),
 ) -> list[SessionRead]:
-    stmt = select(SessionRecord).order_by(SessionRecord.stopped_at.desc(), SessionRecord.id.desc()).limit(limit)
+    stmt = (
+        select(SessionRecord)
+        .where(SessionRecord.stopped_at >= recent_sessions_cutoff())
+        .order_by(SessionRecord.stopped_at.desc(), SessionRecord.id.desc())
+        .limit(limit)
+    )
     if script_name is not None:
         stmt = stmt.where(SessionRecord.script_name == script_name)
     records = db.scalars(stmt).all()

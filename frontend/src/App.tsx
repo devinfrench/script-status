@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
 import type React from "react";
-import { Activity, AlertTriangle, CheckCircle2, Clock, Database, Search, XCircle } from "lucide-react";
+import { Activity, AlertTriangle, BarChart3, CheckCircle2, Clock, Database, Search, TrendingUp, XCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { fetchScriptHealth, fetchScripts } from "./api";
-import { formatDateTime, formatNumber, formatRuntime, prettyJson } from "./format";
+import { formatDateTime, formatNumber, formatRuntime } from "./format";
 import type { ScriptHealth, SessionRecord } from "./types";
 
 export function App() {
@@ -33,10 +33,9 @@ export function App() {
             <h1 className="text-2xl font-semibold tracking-normal sm:text-3xl">Script Status</h1>
             <p className="mt-1 text-sm text-slate-600">Completed bot sessions and recent health by script.</p>
           </div>
-          <div className="grid grid-cols-3 gap-3 text-sm">
+          <div className="grid grid-cols-2 gap-3 text-sm">
             <Metric label="Scripts" value={scripts.length.toString()} />
             <Metric label="Runs" value={formatNumber(scripts.reduce((sum, script) => sum + script.run_count, 0))} />
-            <Metric label="XP" value={formatNumber(scripts.reduce((sum, script) => sum + script.total_experience_gained, 0))} />
           </div>
         </header>
 
@@ -125,10 +124,9 @@ function ScriptSummaryCard({
         </div>
         {failures > 0 ? <XCircle className="h-5 w-5 shrink-0 text-bad" /> : <CheckCircle2 className="h-5 w-5 shrink-0 text-good" />}
       </div>
-      <div className="mt-4 grid grid-cols-3 gap-2 text-xs">
+      <div className="mt-4 grid grid-cols-2 gap-2 text-xs">
         <SummaryCell label="Runs" value={formatNumber(script.run_count)} />
         <SummaryCell label="Avg" value={formatRuntime(script.average_runtime_seconds)} />
-        <SummaryCell label="XP" value={formatNumber(script.total_experience_gained)} />
       </div>
     </button>
   );
@@ -183,17 +181,21 @@ function Pill({ icon, label, tone }: { icon: React.ReactNode; label: string; ton
 }
 
 function SessionRow({ session }: { session: SessionRecord }) {
+  const xpPerHour = getNumberField(session.runtime_info, "xp_gained_hr") ?? calculateXpPerHour(session);
+  const level = getNumberField(session.runtime_info, "level");
+  const levelsGained = getNumberField(session.runtime_info, "levels_gained");
+
   return (
     <article className="rounded-md border border-line bg-white p-4">
-      <div className="grid gap-3 md:grid-cols-4">
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SessionFact icon={<Clock className="h-4 w-4" />} label="Started" value={formatDateTime(session.started_at)} />
+        <SessionFact icon={<Clock className="h-4 w-4" />} label="Stopped" value={formatDateTime(session.stopped_at)} />
         <SessionFact icon={<Activity className="h-4 w-4" />} label="Runtime" value={formatRuntime(session.run_time_seconds)} />
         <SessionFact icon={<Database className="h-4 w-4" />} label="XP gained" value={formatNumber(session.experience_gained)} />
-        <SessionFact icon={<Clock className="h-4 w-4" />} label="Stopped" value={formatDateTime(session.stopped_at)} />
+        <SessionFact icon={<TrendingUp className="h-4 w-4" />} label="XP/hr" value={formatOptionalNumber(xpPerHour)} />
+        <SessionFact icon={<BarChart3 className="h-4 w-4" />} label="Level" value={formatOptionalNumber(level)} />
+        <SessionFact icon={<BarChart3 className="h-4 w-4" />} label="Levels gained" value={formatOptionalNumber(levelsGained)} />
       </div>
-      <pre className="mt-4 max-h-72 overflow-auto rounded-md border border-line bg-slate-950 p-3 text-xs leading-relaxed text-slate-100">
-        {prettyJson(session.runtime_info)}
-      </pre>
     </article>
   );
 }
@@ -205,4 +207,27 @@ function SessionFact({ icon, label, value }: { icon: React.ReactNode; label: str
       <div className="mt-1 truncate text-sm font-semibold">{value}</div>
     </div>
   );
+}
+
+function getNumberField(value: Record<string, unknown>, key: string): number | null {
+  const field = value[key];
+  if (typeof field === "number" && Number.isFinite(field)) {
+    return field;
+  }
+  if (typeof field === "string" && field.trim() !== "") {
+    const parsed = Number(field);
+    return Number.isFinite(parsed) ? parsed : null;
+  }
+  return null;
+}
+
+function calculateXpPerHour(session: SessionRecord): number | null {
+  if (session.run_time_seconds <= 0) {
+    return null;
+  }
+  return Math.round((session.experience_gained / session.run_time_seconds) * 3600);
+}
+
+function formatOptionalNumber(value: number | null): string {
+  return value === null ? "N/A" : formatNumber(value);
 }

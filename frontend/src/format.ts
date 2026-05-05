@@ -24,7 +24,3 @@ export function formatDateTime(value: string | null): string {
     timeStyle: "short"
   }).format(new Date(value));
 }
-
-export function prettyJson(value: unknown): string {
-  return JSON.stringify(value ?? {}, null, 2);
-}
