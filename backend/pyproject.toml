@@ -1,7 +1,7 @@
 [project]
 name = "script-status-backend"
 version = "0.1.0"
-description = "FastAPI service for RuneScape bot script session health"
+description = "FastAPI service for bot script session health"
 requires-python = ">=3.11"
 dependencies = [
     "alembic>=1.13.2",

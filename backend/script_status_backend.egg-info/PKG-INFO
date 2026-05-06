@@ -1,7 +1,7 @@
 Metadata-Version: 2.4
 Name: script-status-backend
 Version: 0.1.0
-Summary: FastAPI service for RuneScape bot script session health
+Summary: FastAPI service for bot script session health
 Requires-Python: >=3.11
 Requires-Dist: alembic>=1.13.2
 Requires-Dist: fastapi>=0.112.0

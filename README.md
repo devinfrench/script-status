@@ -1,6 +1,6 @@
 # Script Status
 
-Docker-first monorepo for recording completed RuneScape bot sessions and viewing script health.
+Docker-first monorepo for recording completed bot sessions and viewing script health.
 
 ## Stack
 
