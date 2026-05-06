@@ -8,6 +8,7 @@ import {
   Clock,
   Database,
   HelpCircle,
+  Loader2,
   TrendingUp,
   XCircle,
 } from "lucide-react";
@@ -266,8 +267,16 @@ function ScriptDetail({
       <div className="shrink-0 border-b border-line pb-4">
         <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
           <div>
-            <h2 className="text-xl font-semibold text-brand">
-              {script.script_name}
+            <h2 className="flex items-center gap-2 text-xl font-semibold text-brand">
+              <span>{script.script_name}</span>
+              <span className="flex h-5 w-5 items-center justify-center">
+                {loading ? (
+                  <Loader2
+                    className="h-4 w-4 animate-spin text-brand"
+                    aria-label="Refreshing script detail"
+                  />
+                ) : null}
+              </span>
             </h2>
             <p className="mt-1 text-sm text-slate-300">
               {script.run_count} runs,{" "}
@@ -288,8 +297,6 @@ function ScriptDetail({
       </div>
 
       <div className="themed-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
-        {loading ? <StateMessage text="Refreshing script detail..." /> : null}
-
         {script.recent_sessions.length > 0 ? (
           <div className="grid gap-3">
             {script.recent_sessions.map((session) => (
