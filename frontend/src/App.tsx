@@ -180,21 +180,17 @@ function getScriptHealthTone(sessions: SessionRecord[]): ScriptHealthTone {
   const hardFailures = sessions.filter((session) =>
     isHardFailureStatus(session.status),
   ).length;
-  const stuck = sessions.filter(
-    (session) => session.status.toUpperCase() === "STUCK",
-  ).length;
   const attention = sessions.filter((session) =>
     isAttentionStatus(session.status),
   ).length;
 
   const hardFailureRate = hardFailures / total;
-  const stuckRate = stuck / total;
   const attentionRate = attention / total;
 
-  if (stuckRate >= 0.1 || hardFailureRate >= 0.3) {
+  if (hardFailureRate >= 0.3) {
     return "bad";
   }
-  if (hardFailureRate > 0 || attentionRate >= 0.2) {
+  if (hardFailureRate >= 0.1 || attentionRate >= 0.2) {
     return "warn";
   }
   return "good";

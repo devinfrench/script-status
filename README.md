@@ -86,8 +86,8 @@ Dashboard script cards use the percentage of visible recent sessions for that sc
 - Hard failure statuses: `ERROR`, `STUCK`
 - Attention statuses: `UNKNOWN`, `MISSING_REQUIREMENTS`
 - Neutral: no visible recent sessions
-- Red: `STUCK` is at least 10% of recent sessions, or hard failures are at least 30% of recent sessions
-- Yellow/orange: hard failures are present but below the red threshold, or attention statuses are at least 20% of recent sessions
+- Red: hard failures are at least 30% of recent sessions
+- Yellow/orange: hard failures are at least 10% but below the red threshold, or attention statuses are at least 20% of recent sessions
 - Green: hard failures are 0% and attention statuses are below 20% of recent sessions
 
 Fields such as `success` or `status` inside `runtime_info` are stored but are not used for health classification.

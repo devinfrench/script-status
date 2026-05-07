@@ -151,7 +151,7 @@ describe("App", () => {
     ).toBeInTheDocument();
     expect(
       within(summaries).getByRole("button", {
-        name: "Mining health bad",
+        name: "Mining health warn",
       }),
     ).toBeInTheDocument();
   });
