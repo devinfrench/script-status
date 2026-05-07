@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import type React from "react";
 import {
   Activity,
@@ -30,7 +30,13 @@ export function App() {
     enabled: selectedScript !== null,
   });
 
-  const scripts = scriptsQuery.data ?? [];
+  const scripts = useMemo(
+    () =>
+      [...(scriptsQuery.data ?? [])].sort((left, right) =>
+        left.script_name.localeCompare(right.script_name),
+      ),
+    [scriptsQuery.data],
+  );
   const activeScript =
     detailQuery.data ??
     scripts.find((script) => script.script_name === selectedScript) ??

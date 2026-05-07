@@ -156,6 +156,24 @@ describe("App", () => {
     ).toBeInTheDocument();
   });
 
+  it("sorts script summaries alphabetically by script name", async () => {
+    renderApp();
+
+    const summaries = screen.getByLabelText("Script summaries");
+    await within(summaries).findByText("Agility");
+
+    expect(
+      within(summaries)
+        .getAllByRole("button")
+        .map((button) => button.textContent),
+    ).toEqual([
+      expect.stringContaining("Agility"),
+      expect.stringContaining("Cooking"),
+      expect.stringContaining("Fishing"),
+      expect.stringContaining("Mining"),
+    ]);
+  });
+
   it("shows a single load error when sessions cannot be loaded", async () => {
     vi.stubGlobal(
       "fetch",
