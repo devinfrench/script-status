@@ -141,5 +141,5 @@ def test_script_aggregation_and_health_counts(client):
     assert data["average_runtime_seconds"] == 1233
     assert data["total_experience_gained"] == 1000
     assert data["recent_success_count"] == 1
-    assert data["recent_failure_count"] == 2
+    assert data["recent_failure_count"] == 1
     assert data["recent_unknown_count"] == 1

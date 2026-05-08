@@ -65,7 +65,7 @@ Available endpoints:
 `started_at` is calculated as `stopped_at - run_time_seconds`; it is not stored.
 
 The dashboard and script health endpoints only use sessions from the past 30 days for visible sessions, run counts, average runtime, recent XP totals, and health counts.
-Sessions with `MISSING_REQUIREMENTS` are shown and counted, but are excluded from average runtime calculations.
+Sessions with `MISSING_REQUIREMENTS` are shown and included in run counts, but are excluded from average runtime calculations and health classification.
 
 `status` is stored as a flexible string so new statuses can be added without changing the database type. If omitted, it defaults to `UNKNOWN`. Current sender statuses are:
 
@@ -75,7 +75,7 @@ Sessions with `MISSING_REQUIREMENTS` are shown and counted, but are excluded fro
 - `ERROR`
 - `UNKNOWN`
 
-Health counts use the explicit status:
+Health counts use the explicit status, excluding `MISSING_REQUIREMENTS`:
 
 - Success: `SUCCESS`
 - Unknown: `UNKNOWN`

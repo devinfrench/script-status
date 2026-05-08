@@ -9,10 +9,13 @@ from app.schemas import ScriptHealth, SessionRead
 
 HEALTH_WINDOW_DAYS = 30
 AVERAGE_EXCLUDED_STATUSES = {"MISSING_REQUIREMENTS"}
+HEALTH_EXCLUDED_STATUSES = {"MISSING_REQUIREMENTS"}
 
 
-def _session_health(record: SessionRecord) -> str:
+def _session_health(record: SessionRecord) -> str | None:
     status = record.status.upper()
+    if status in HEALTH_EXCLUDED_STATUSES:
+        return None
     if status == "SUCCESS":
         return "success"
     if status == "UNKNOWN":
@@ -76,7 +79,7 @@ def build_health(db: Session, script_name: str | None = None, limit: int = 25) -
                 success_count += 1
             elif health == "failure":
                 failure_count += 1
-            else:
+            elif health == "unknown":
                 unknown_count += 1
 
         summaries.append(
