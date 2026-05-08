@@ -84,7 +84,7 @@ Health counts use the explicit status:
 Dashboard script cards use the percentage of visible recent sessions for that script to choose the card highlight:
 
 - Hard failure statuses: `ERROR`, `STUCK`
-- Attention statuses: `UNKNOWN`, `MISSING_REQUIREMENTS`
+- Attention statuses: `UNKNOWN`
 - Neutral: no visible recent sessions
 - Red: hard failures are at least 30% of recent sessions
 - Yellow/orange: hard failures are at least 10% but below the red threshold, or attention statuses are at least 20% of recent sessions

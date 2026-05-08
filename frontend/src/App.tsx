@@ -209,7 +209,7 @@ function isHardFailureStatus(status: string): boolean {
 
 function isAttentionStatus(status: string): boolean {
   const normalized = status.toUpperCase();
-  return normalized === "UNKNOWN" || normalized === "MISSING_REQUIREMENTS";
+  return normalized === "UNKNOWN";
 }
 
 function getScriptSummaryStyle(tone: ScriptHealthTone) {

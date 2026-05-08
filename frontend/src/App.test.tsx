@@ -136,7 +136,7 @@ describe("App", () => {
 
     expect(
       await within(summaries).findByRole("button", {
-        name: "Agility health warn",
+        name: "Agility health good",
       }),
     ).toBeInTheDocument();
     expect(
