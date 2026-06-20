@@ -87,7 +87,7 @@ def test_sessions_can_filter_by_script(client):
         "/api/sessions",
         json={
             "script_name": "Miner",
-            "stopped_at": (datetime.now(UTC) - timedelta(days=31)).isoformat(),
+            "stopped_at": (datetime.now(UTC) - timedelta(days=4)).isoformat(),
             "run_time_seconds": 10,
             "experience_gained": 1,
         },
@@ -124,7 +124,7 @@ def test_script_aggregation_and_health_counts(client):
         "/api/sessions",
         json={
             "script_name": "Agility",
-            "stopped_at": (datetime.now(UTC) - timedelta(days=31)).isoformat(),
+            "stopped_at": (datetime.now(UTC) - timedelta(days=4)).isoformat(),
             "run_time_seconds": 9999,
             "experience_gained": 999999,
             "status": "SUCCESS",
@@ -143,3 +143,29 @@ def test_script_aggregation_and_health_counts(client):
     assert data["recent_success_count"] == 1
     assert data["recent_failure_count"] == 1
     assert data["recent_unknown_count"] == 1
+
+
+def test_script_health_returns_and_counts_latest_50_sessions(client):
+    now = datetime.now(UTC)
+    for index in range(55):
+        client.post(
+            "/api/sessions",
+            json={
+                "script_name": "Mining",
+                "stopped_at": (now - timedelta(minutes=index)).isoformat(),
+                "run_time_seconds": 60,
+                "experience_gained": index,
+                "status": "SUCCESS" if index < 50 else "ERROR",
+            },
+        )
+
+    response = client.get("/api/scripts/Mining/health")
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["run_count"] == 55
+    assert len(data["recent_sessions"]) == 50
+    assert data["recent_success_count"] == 50
+    assert data["recent_failure_count"] == 0
+    assert data["recent_sessions"][0]["experience_gained"] == 0
+    assert data["recent_sessions"][-1]["experience_gained"] == 49

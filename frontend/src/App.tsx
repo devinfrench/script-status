@@ -19,6 +19,8 @@ import { formatDateTime, formatNumber, formatRuntime } from "./format";
 import { LogoMark } from "./LogoMark";
 import type { ScriptHealth, SessionRecord } from "./types";
 
+const SESSIONS_PER_PAGE = 25;
+
 export function App() {
   const [selectedScript, setSelectedScript] = useState<string | null>(null);
   const scriptsQuery = useQuery({
@@ -266,7 +268,23 @@ function ScriptDetail({
   const [selectedSession, setSelectedSession] = useState<SessionRecord | null>(
     null,
   );
+  const [sessionPage, setSessionPage] = useState(1);
   const statusCounts = getSessionStatusCounts(script.recent_sessions);
+  const totalPages = Math.max(
+    1,
+    Math.ceil(script.recent_sessions.length / SESSIONS_PER_PAGE),
+  );
+  const currentPage = Math.min(sessionPage, totalPages);
+  const pageStart = (currentPage - 1) * SESSIONS_PER_PAGE;
+  const visibleSessions = script.recent_sessions.slice(
+    pageStart,
+    pageStart + SESSIONS_PER_PAGE,
+  );
+
+  useEffect(() => {
+    setSessionPage(1);
+    setSelectedSession(null);
+  }, [script.script_name]);
 
   return (
     <>
@@ -305,14 +323,46 @@ function ScriptDetail({
 
         <div className="themed-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
           {script.recent_sessions.length > 0 ? (
-            <div className="grid gap-3">
-              {script.recent_sessions.map((session) => (
-                <SessionRow
-                  key={session.id}
-                  session={session}
-                  onSelect={() => setSelectedSession(session)}
-                />
-              ))}
+            <div>
+              <div className="grid gap-3">
+                {visibleSessions.map((session) => (
+                  <SessionRow
+                    key={session.id}
+                    session={session}
+                    onSelect={() => setSelectedSession(session)}
+                  />
+                ))}
+              </div>
+              {totalPages > 1 ? (
+                <nav
+                  className="mt-4 flex items-center justify-between gap-3 border-t border-line pt-4"
+                  aria-label="Session pagination"
+                >
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSessionPage((page) => Math.max(1, page - 1))
+                    }
+                    disabled={currentPage === 1}
+                    className="rounded-md border border-line bg-surface px-3 py-2 text-sm font-semibold transition hover:border-brand hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Previous
+                  </button>
+                  <span className="text-sm text-slate-300">
+                    Page {currentPage} of {totalPages}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSessionPage((page) => Math.min(totalPages, page + 1))
+                    }
+                    disabled={currentPage === totalPages}
+                    className="rounded-md border border-line bg-surface px-3 py-2 text-sm font-semibold transition hover:border-brand hover:bg-muted disabled:cursor-not-allowed disabled:opacity-40"
+                  >
+                    Next
+                  </button>
+                </nav>
+              ) : null}
             </div>
           ) : (
             <StateMessage text="No recent sessions found for this script." />

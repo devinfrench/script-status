@@ -46,18 +46,16 @@ const scripts = [
   },
   {
     script_name: "Cooking",
-    run_count: 3,
+    run_count: 26,
     average_runtime_seconds: 300,
     latest_stopped_at: "2026-05-02T12:00:00Z",
-    total_experience_gained: 3000,
-    recent_success_count: 3,
+    total_experience_gained: 26000,
+    recent_success_count: 26,
     recent_failure_count: 0,
     recent_unknown_count: 0,
-    recent_sessions: [
-      session(2, "Cooking", "SUCCESS"),
-      session(3, "Cooking", "SUCCESS"),
-      session(4, "Cooking", "SUCCESS")
-    ]
+    recent_sessions: Array.from({ length: 26 }, (_, index) =>
+      session(100 + index, "Cooking", "SUCCESS"),
+    )
   },
   {
     script_name: "Mining",
@@ -256,5 +254,28 @@ describe("App", () => {
 
     await userEvent.keyboard("{Escape}");
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("paginates loaded sessions 25 per page", async () => {
+    renderApp();
+
+    const summaries = screen.getByLabelText("Script summaries");
+    await within(summaries).findByText("Cooking");
+    await userEvent.click(within(summaries).getByText("Cooking"));
+
+    expect(await screen.findByText("Page 1 of 2")).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: /View session \d+ details/ }),
+    ).toHaveLength(25);
+
+    await userEvent.click(screen.getByRole("button", { name: "Next" }));
+
+    expect(screen.getByText("Page 2 of 2")).toBeInTheDocument();
+    expect(
+      screen.getAllByRole("button", { name: /View session \d+ details/ }),
+    ).toHaveLength(1);
+    expect(
+      screen.getByRole("button", { name: "View session 125 details" }),
+    ).toBeInTheDocument();
   });
 });

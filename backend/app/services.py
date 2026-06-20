@@ -7,7 +7,8 @@ from app.models import SessionRecord
 from app.schemas import ScriptHealth, SessionRead
 
 
-HEALTH_WINDOW_DAYS = 30
+HEALTH_WINDOW_DAYS = 3
+HEALTH_SESSION_LIMIT = 50
 AVERAGE_EXCLUDED_STATUSES = {"MISSING_REQUIREMENTS"}
 HEALTH_EXCLUDED_STATUSES = {"MISSING_REQUIREMENTS"}
 
@@ -30,7 +31,11 @@ def recent_sessions_cutoff(now: datetime | None = None) -> datetime:
     return current_time - timedelta(days=HEALTH_WINDOW_DAYS)
 
 
-def build_health(db: Session, script_name: str | None = None, limit: int = 25) -> list[ScriptHealth]:
+def build_health(
+    db: Session,
+    script_name: str | None = None,
+    limit: int = HEALTH_SESSION_LIMIT,
+) -> list[ScriptHealth]:
     cutoff = recent_sessions_cutoff()
     average_runtime_seconds = func.avg(
         case(

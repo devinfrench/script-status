@@ -64,7 +64,7 @@ Available endpoints:
 
 `started_at` is calculated as `stopped_at - run_time_seconds`; it is not stored.
 
-The dashboard and script health endpoints only use sessions from the past 30 days for visible sessions, run counts, average runtime, recent XP totals, and health counts.
+The dashboard and script health endpoints only use sessions from the past 3 days for run counts, average runtime, recent XP totals, and script visibility. Each script returns its latest 50 sessions from that window for health classification and display, with the dashboard showing 25 sessions per page.
 Sessions with `MISSING_REQUIREMENTS` are shown and included in run counts, but are excluded from average runtime calculations and health classification.
 
 `status` is stored as a flexible string so new statuses can be added without changing the database type. If omitted, it defaults to `UNKNOWN`. Current sender statuses are:
