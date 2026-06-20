@@ -7,7 +7,7 @@ from app.config import get_settings
 from app.database import get_db
 from app.models import SessionRecord
 from app.schemas import ScriptHealth, SessionCreate, SessionRead
-from app.services import build_health, recent_sessions_cutoff
+from app.services import build_health
 
 settings = get_settings()
 
@@ -43,7 +43,6 @@ def list_sessions(
 ) -> list[SessionRead]:
     stmt = (
         select(SessionRecord)
-        .where(SessionRecord.stopped_at >= recent_sessions_cutoff())
         .order_by(SessionRecord.stopped_at.desc(), SessionRecord.id.desc())
         .limit(limit)
     )

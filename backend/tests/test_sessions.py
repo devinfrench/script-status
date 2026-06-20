@@ -96,7 +96,11 @@ def test_sessions_can_filter_by_script(client):
     response = client.get("/api/sessions?script_name=Miner")
 
     assert response.status_code == 200
-    assert [session["script_name"] for session in response.json()] == ["Miner", "Miner"]
+    assert [session["script_name"] for session in response.json()] == [
+        "Miner",
+        "Miner",
+        "Miner",
+    ]
 
 
 def test_script_aggregation_and_health_counts(client):
@@ -137,12 +141,14 @@ def test_script_aggregation_and_health_counts(client):
     assert response.status_code == 200
     data = response.json()
     assert data["script_name"] == "Agility"
-    assert data["run_count"] == 4
-    assert data["average_runtime_seconds"] == 1233
-    assert data["total_experience_gained"] == 1000
+    assert data["run_count"] == 5
+    assert data["average_runtime_seconds"] == 3424.5
+    assert data["total_experience_gained"] == 1000999
     assert data["recent_success_count"] == 1
     assert data["recent_failure_count"] == 1
     assert data["recent_unknown_count"] == 1
+    assert len(data["recent_sessions"]) == 5
+    assert len(data["health_sessions"]) == 4
 
 
 def test_script_health_returns_and_counts_latest_50_sessions(client):
@@ -164,8 +170,10 @@ def test_script_health_returns_and_counts_latest_50_sessions(client):
     assert response.status_code == 200
     data = response.json()
     assert data["run_count"] == 55
-    assert len(data["recent_sessions"]) == 50
+    assert len(data["recent_sessions"]) == 55
+    assert len(data["health_sessions"]) == 50
     assert data["recent_success_count"] == 50
     assert data["recent_failure_count"] == 0
     assert data["recent_sessions"][0]["experience_gained"] == 0
-    assert data["recent_sessions"][-1]["experience_gained"] == 49
+    assert data["health_sessions"][0]["experience_gained"] == 0
+    assert data["health_sessions"][-1]["experience_gained"] == 49

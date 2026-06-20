@@ -63,3 +63,4 @@ class ScriptHealth(BaseModel):
     recent_failure_count: int
     recent_unknown_count: int
     recent_sessions: list[SessionRead] = Field(default_factory=list)
+    health_sessions: list[SessionRead] = Field(default_factory=list)

@@ -54,7 +54,6 @@ def build_health(
             func.max(SessionRecord.stopped_at).label("latest_stopped_at"),
             func.coalesce(func.sum(SessionRecord.experience_gained), 0).label("total_experience_gained"),
         )
-        .where(SessionRecord.stopped_at >= cutoff)
         .group_by(SessionRecord.script_name)
         .order_by(desc("latest_stopped_at"))
     )
@@ -65,20 +64,30 @@ def build_health(
     summaries: list[ScriptHealth] = []
 
     for row in rows:
-        session_stmt = (
+        all_sessions_stmt = (
+            select(SessionRecord)
+            .where(SessionRecord.script_name == row.script_name)
+            .order_by(SessionRecord.stopped_at.desc(), SessionRecord.id.desc())
+        )
+        all_records = db.scalars(all_sessions_stmt).all()
+        recent_sessions = [SessionRead.from_record(record) for record in all_records]
+
+        health_sample_stmt = (
             select(SessionRecord)
             .where(SessionRecord.script_name == row.script_name)
             .where(SessionRecord.stopped_at >= cutoff)
             .order_by(SessionRecord.stopped_at.desc(), SessionRecord.id.desc())
             .limit(limit)
         )
-        recent_records = db.scalars(session_stmt).all()
-        recent_sessions = [SessionRead.from_record(record) for record in recent_records]
+        health_sample = db.scalars(health_sample_stmt).all()
+        health_sessions = [
+            SessionRead.from_record(record) for record in health_sample
+        ]
 
         success_count = 0
         failure_count = 0
         unknown_count = 0
-        for record in recent_records:
+        for record in health_sample:
             health = _session_health(record)
             if health == "success":
                 success_count += 1
@@ -98,6 +107,7 @@ def build_health(
                 recent_failure_count=failure_count,
                 recent_unknown_count=unknown_count,
                 recent_sessions=recent_sessions,
+                health_sessions=health_sessions,
             )
         )
 

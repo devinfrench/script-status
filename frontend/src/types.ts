@@ -21,4 +21,5 @@ export interface ScriptHealth {
   recent_failure_count: number;
   recent_unknown_count: number;
   recent_sessions: SessionRecord[];
+  health_sessions: SessionRecord[];
 }

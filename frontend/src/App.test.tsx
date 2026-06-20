@@ -31,7 +31,8 @@ const scripts = [
     recent_success_count: 1,
     recent_failure_count: 1,
     recent_unknown_count: 0,
-    recent_sessions: [session(1, "Agility", "MISSING_REQUIREMENTS")]
+    recent_sessions: [session(1, "Agility", "MISSING_REQUIREMENTS")],
+    health_sessions: [session(1, "Agility", "MISSING_REQUIREMENTS")]
   },
   {
     script_name: "Fishing",
@@ -42,7 +43,8 @@ const scripts = [
     recent_success_count: 1,
     recent_failure_count: 0,
     recent_unknown_count: 0,
-    recent_sessions: []
+    recent_sessions: [],
+    health_sessions: []
   },
   {
     script_name: "Cooking",
@@ -54,6 +56,9 @@ const scripts = [
     recent_failure_count: 0,
     recent_unknown_count: 0,
     recent_sessions: Array.from({ length: 26 }, (_, index) =>
+      session(100 + index, "Cooking", "SUCCESS"),
+    ),
+    health_sessions: Array.from({ length: 26 }, (_, index) =>
       session(100 + index, "Cooking", "SUCCESS"),
     )
   },
@@ -67,6 +72,12 @@ const scripts = [
     recent_failure_count: 1,
     recent_unknown_count: 0,
     recent_sessions: [
+      session(5, "Mining", "STUCK"),
+      ...Array.from({ length: 9 }, (_, index) =>
+        session(6 + index, "Mining", "SUCCESS"),
+      )
+    ],
+    health_sessions: [
       session(5, "Mining", "STUCK"),
       ...Array.from({ length: 9 }, (_, index) =>
         session(6 + index, "Mining", "SUCCESS"),

@@ -145,7 +145,7 @@ function ScriptSummaryCard({
   selected: boolean;
   onSelect: () => void;
 }) {
-  const healthTone = getScriptHealthTone(script.recent_sessions);
+  const healthTone = getScriptHealthTone(script);
   const style = getScriptSummaryStyle(healthTone);
   return (
     <button
@@ -180,7 +180,8 @@ function ScriptSummaryCard({
 
 type ScriptHealthTone = "good" | "warn" | "bad" | "neutral";
 
-function getScriptHealthTone(sessions: SessionRecord[]): ScriptHealthTone {
+function getScriptHealthTone(script: ScriptHealth): ScriptHealthTone {
+  const sessions = script.health_sessions;
   const total = sessions.length;
   if (total === 0) {
     return "neutral";
@@ -211,8 +212,7 @@ function isHardFailureStatus(status: string): boolean {
 }
 
 function isAttentionStatus(status: string): boolean {
-  const normalized = status.toUpperCase();
-  return normalized === "UNKNOWN";
+  return status.toUpperCase() === "UNKNOWN";
 }
 
 function getScriptSummaryStyle(tone: ScriptHealthTone) {
