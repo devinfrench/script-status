@@ -220,4 +220,41 @@ describe("App", () => {
       await screen.findByText("No recent sessions found for this script."),
     ).toBeInTheDocument();
   });
+
+  it("opens a modal with all session data and closes it", async () => {
+    renderApp();
+
+    await screen.findAllByText("Agility");
+    await userEvent.click(
+      screen.getByRole("button", { name: "View session 1 details" }),
+    );
+
+    const dialog = screen.getByRole("dialog", { name: "Session #1" });
+    expect(dialog).toBeInTheDocument();
+    expect(within(dialog).getAllByText("Agility")).toHaveLength(2);
+    expect(within(dialog).getByText("Missing Requirements")).toBeInTheDocument();
+    expect(within(dialog).getByText("Experience gained")).toBeInTheDocument();
+    expect(within(dialog).getByText("1,500")).toBeInTheDocument();
+    expect(within(dialog).getByText("Xp Gained Hr")).toBeInTheDocument();
+    expect(within(dialog).getByText("45000")).toBeInTheDocument();
+    expect(within(dialog).getByText("Levels Gained")).toBeInTheDocument();
+
+    await userEvent.click(
+      within(dialog).getByRole("button", { name: "Close session details" }),
+    );
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
+
+  it("closes the session modal with Escape", async () => {
+    renderApp();
+
+    await screen.findAllByText("Agility");
+    await userEvent.click(
+      screen.getByRole("button", { name: "View session 1 details" }),
+    );
+    expect(screen.getByRole("dialog")).toBeInTheDocument();
+
+    await userEvent.keyboard("{Escape}");
+    expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
+  });
 });

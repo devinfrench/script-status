@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type React from "react";
 import {
   Activity,
@@ -10,6 +10,7 @@ import {
   HelpCircle,
   Loader2,
   TrendingUp,
+  X,
   XCircle,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -262,54 +263,69 @@ function ScriptDetail({
   script: ScriptHealth;
   loading: boolean;
 }) {
+  const [selectedSession, setSelectedSession] = useState<SessionRecord | null>(
+    null,
+  );
   const statusCounts = getSessionStatusCounts(script.recent_sessions);
 
   return (
-    <section className="flex h-full min-h-0 flex-col gap-4">
-      <div className="shrink-0 border-b border-line pb-4">
-        <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-          <div>
-            <h2 className="flex items-center gap-2 text-xl font-semibold text-brand">
-              <span>{script.script_name}</span>
-              <span className="flex h-5 w-5 items-center justify-center">
-                {loading ? (
-                  <Loader2
-                    className="h-4 w-4 animate-spin text-brand"
-                    aria-label="Refreshing script detail"
-                  />
-                ) : null}
-              </span>
-            </h2>
-            <p className="mt-1 text-sm text-slate-300">
-              {script.run_count} runs,{" "}
-              {formatRuntime(script.average_runtime_seconds)} average runtime.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2 text-xs">
-            {statusCounts.map(({ status, count }) => (
-              <Pill
-                key={status}
-                icon={getStatusIcon(status)}
-                label={`${count} ${formatStatus(status)}`}
-                className={getStatusPillClass(status)}
-              />
-            ))}
+    <>
+      <section className="flex h-full min-h-0 flex-col gap-4">
+        <div className="shrink-0 border-b border-line pb-4">
+          <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
+            <div>
+              <h2 className="flex items-center gap-2 text-xl font-semibold text-brand">
+                <span>{script.script_name}</span>
+                <span className="flex h-5 w-5 items-center justify-center">
+                  {loading ? (
+                    <Loader2
+                      className="h-4 w-4 animate-spin text-brand"
+                      aria-label="Refreshing script detail"
+                    />
+                  ) : null}
+                </span>
+              </h2>
+              <p className="mt-1 text-sm text-slate-300">
+                {script.run_count} runs,{" "}
+                {formatRuntime(script.average_runtime_seconds)} average runtime.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 text-xs">
+              {statusCounts.map(({ status, count }) => (
+                <Pill
+                  key={status}
+                  icon={getStatusIcon(status)}
+                  label={`${count} ${formatStatus(status)}`}
+                  className={getStatusPillClass(status)}
+                />
+              ))}
+            </div>
           </div>
         </div>
-      </div>
 
-      <div className="themed-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
-        {script.recent_sessions.length > 0 ? (
-          <div className="grid gap-3">
-            {script.recent_sessions.map((session) => (
-              <SessionRow key={session.id} session={session} />
-            ))}
-          </div>
-        ) : (
-          <StateMessage text="No recent sessions found for this script." />
-        )}
-      </div>
-    </section>
+        <div className="themed-scrollbar min-h-0 flex-1 overflow-y-auto pr-1">
+          {script.recent_sessions.length > 0 ? (
+            <div className="grid gap-3">
+              {script.recent_sessions.map((session) => (
+                <SessionRow
+                  key={session.id}
+                  session={session}
+                  onSelect={() => setSelectedSession(session)}
+                />
+              ))}
+            </div>
+          ) : (
+            <StateMessage text="No recent sessions found for this script." />
+          )}
+        </div>
+      </section>
+      {selectedSession ? (
+        <SessionModal
+          session={selectedSession}
+          onClose={() => setSelectedSession(null)}
+        />
+      ) : null}
+    </>
   );
 }
 
@@ -360,7 +376,13 @@ function getStatusPillClass(status: string): string {
   return "border-line bg-surface text-slate-300";
 }
 
-function SessionRow({ session }: { session: SessionRecord }) {
+function SessionRow({
+  session,
+  onSelect,
+}: {
+  session: SessionRecord;
+  onSelect: () => void;
+}) {
   const xpPerHour =
     getNumberField(session.runtime_info, "xp_gained_hr") ??
     calculateXpPerHour(session);
@@ -369,8 +391,11 @@ function SessionRow({ session }: { session: SessionRecord }) {
   const highlightClass = getStatusHighlightClass(session.status);
 
   return (
-    <article
-      className={`rounded-md border bg-surface p-4 shadow-sm ${highlightClass}`}
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-label={`View session ${session.id} details`}
+      className={`rounded-md border bg-surface p-4 text-left shadow-sm transition hover:bg-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-brand ${highlightClass}`}
     >
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SessionFact
@@ -415,8 +440,174 @@ function SessionRow({ session }: { session: SessionRecord }) {
           value={formatOptionalNumber(levelsGained)}
         />
       </div>
-    </article>
+    </button>
   );
+}
+
+function SessionModal({
+  session,
+  onClose,
+}: {
+  session: SessionRecord;
+  onClose: () => void;
+}) {
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
+
+  const runtimeEntries = Object.entries(session.runtime_info);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/75 p-4 backdrop-blur-sm"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="session-modal-title"
+        className="flex max-h-[90vh] w-full max-w-3xl flex-col overflow-hidden rounded-lg border border-line bg-panel shadow-2xl"
+      >
+        <header className="flex shrink-0 items-start justify-between gap-4 border-b border-line px-5 py-4">
+          <div>
+            <h2
+              id="session-modal-title"
+              className="text-xl font-semibold text-brand"
+            >
+              Session #{session.id}
+            </h2>
+            <p className="mt-1 text-sm text-slate-300">
+              {session.script_name}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close session details"
+            className="rounded-md p-2 text-slate-300 transition hover:bg-muted hover:text-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-brand"
+          >
+            <X className="h-5 w-5" />
+          </button>
+        </header>
+
+        <div className="themed-scrollbar min-h-0 overflow-y-auto p-5">
+          <div className="grid gap-4 sm:grid-cols-2">
+            <ModalField label="Session ID" value={String(session.id)} />
+            <ModalField label="Script name" value={session.script_name} />
+            <ModalField
+              label="Status"
+              value={formatStatus(session.status)}
+              valueClassName={getStatusTextClass(session.status)}
+            />
+            <ModalField
+              label="Runtime"
+              value={formatRuntime(session.run_time_seconds)}
+            />
+            <ModalField
+              label="Started"
+              value={formatDateTime(session.started_at)}
+            />
+            <ModalField
+              label="Stopped"
+              value={formatDateTime(session.stopped_at)}
+            />
+            <ModalField
+              label="Experience gained"
+              value={formatNumber(session.experience_gained)}
+            />
+          </div>
+
+          <div className="mt-6 border-t border-line pt-5">
+            <h3 className="text-sm font-semibold uppercase tracking-wide text-slate-300">
+              Runtime info
+            </h3>
+            {runtimeEntries.length > 0 ? (
+              <dl className="mt-3 grid gap-3 sm:grid-cols-2">
+                {runtimeEntries.map(([key, value]) => (
+                  <div
+                    key={key}
+                    className="min-w-0 rounded-md border border-line bg-surface p-3"
+                  >
+                    <dt className="break-words text-xs text-slate-300">
+                      {formatRuntimeInfoLabel(key)}
+                    </dt>
+                    <dd className="mt-1 break-words text-sm font-semibold">
+                      {formatRuntimeInfoValue(value)}
+                    </dd>
+                  </div>
+                ))}
+              </dl>
+            ) : (
+              <p className="mt-3 text-sm text-slate-300">
+                No runtime information recorded.
+              </p>
+            )}
+          </div>
+        </div>
+      </section>
+    </div>
+  );
+}
+
+function ModalField({
+  label,
+  value,
+  valueClassName = "",
+}: {
+  label: string;
+  value: string;
+  valueClassName?: string;
+}) {
+  return (
+    <div className="min-w-0 rounded-md border border-line bg-surface p-3">
+      <div className="text-xs text-slate-300">{label}</div>
+      <div className={`mt-1 break-words text-sm font-semibold ${valueClassName}`}>
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function formatRuntimeInfoLabel(key: string): string {
+  return key
+    .split("_")
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function formatRuntimeInfoValue(value: unknown): string {
+  if (value === null) {
+    return "null";
+  }
+  if (typeof value === "string") {
+    return value || '""';
+  }
+  if (
+    typeof value === "number" ||
+    typeof value === "boolean" ||
+    typeof value === "bigint"
+  ) {
+    return String(value);
+  }
+  if (typeof value === "undefined") {
+    return "undefined";
+  }
+  try {
+    return JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
 }
 
 function getStatusHighlightClass(status: string): string {
